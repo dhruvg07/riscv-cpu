@@ -8,12 +8,12 @@ module top (
 
     localparam LED_ADDR = 32'h1000_0000;
 
-    wire [31:0] pc_out, pc_plus_4, pc_next, branch_target;
+    wire [31:0] pc_out, pc_plus_4, pc_next, pc_target;
     wire [31:0] instr;
     wire [31:0] rs1_data, rs2_data, alu_b, alu_result, imm;
     wire [31:0] dmem_read_data, reg_write_data;
     wire        reg_write, alu_src, branch, zero, branch_taken;
-    wire        mem_read, mem_write;
+    wire        mem_read, mem_write, jump, jump_reg;
     wire [3:0]  alu_ctrl;
 
     wire [6:0] opcode    = instr[6:0];
@@ -67,6 +67,8 @@ module top (
         .branch    (branch),
         .mem_read  (mem_read),
         .mem_write (mem_write),
+        .jump      (jump),
+        .jump_reg  (jump_reg),
         .alu_ctrl  (alu_ctrl)
     );
 
@@ -97,12 +99,20 @@ module top (
         .led        (led)
     );
 
-    // Write-back mux: loaded value from memory, or the ALU result
-    assign reg_write_data = mem_read ? dmem_read_data : alu_result;
+    // Write-back mux: loaded value, return address (jal/jalr), or ALU result
+    assign reg_write_data = mem_read        ? dmem_read_data :
+                             (jump|jump_reg) ? pc_plus_4 :
+                                                alu_result;
 
-    assign pc_plus_4     = pc_out + 32'd4;
-    assign branch_target = pc_out + imm;
-    assign branch_taken  = branch & (zero ^ funct3[0]); // beq: funct3[0]=0, bne: funct3[0]=1
-    assign pc_next        = branch_taken ? branch_target : pc_plus_4;
+    assign pc_plus_4    = pc_out + 32'd4;
+    assign pc_target    = pc_out + imm;           // used by taken branches and jal
+    assign branch_taken = branch & (zero ^ funct3[0]); // beq: funct3[0]=0, bne: funct3[0]=1
+
+    // PC mux: jal -> PC+imm, jalr -> rs1+imm (already in alu_result),
+    // taken branch -> PC+imm, otherwise -> PC+4
+    assign pc_next = jump             ? pc_target :
+                      jump_reg        ? alu_result :
+                      branch_taken    ? pc_target :
+                                        pc_plus_4;
 
 endmodule

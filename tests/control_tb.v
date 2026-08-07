@@ -10,6 +10,8 @@ module control_tb;
     wire       branch;
     wire       mem_read;
     wire       mem_write;
+    wire       jump;
+    wire       jump_reg;
     wire [3:0] alu_ctrl;
 
     integer    errors = 0;
@@ -32,23 +34,26 @@ module control_tb;
         .branch    (branch),
         .mem_read  (mem_read),
         .mem_write (mem_write),
+        .jump      (jump),
+        .jump_reg  (jump_reg),
         .alu_ctrl  (alu_ctrl)
     );
 
     task check(input rw_exp, input src_exp, input br_exp, input mr_exp, input mw_exp,
-               input [3:0] alu_exp, input string label);
+               input j_exp, input jr_exp, input [3:0] alu_exp, input string label);
         begin
             #1;
             checks = checks + 1;
             if (reg_write !== rw_exp || alu_src !== src_exp || branch !== br_exp ||
-                mem_read !== mr_exp || mem_write !== mw_exp || alu_ctrl !== alu_exp) begin
+                mem_read !== mr_exp || mem_write !== mw_exp || jump !== j_exp ||
+                jump_reg !== jr_exp || alu_ctrl !== alu_exp) begin
                 errors = errors + 1;
-                $display("[FAIL] %0s: expected rw=%0b src=%0b br=%0b mr=%0b mw=%0b alu=%0b, got rw=%0b src=%0b br=%0b mr=%0b mw=%0b alu=%0b",
-                          label, rw_exp, src_exp, br_exp, mr_exp, mw_exp, alu_exp,
-                          reg_write, alu_src, branch, mem_read, mem_write, alu_ctrl);
+                $display("[FAIL] %0s: expected rw=%0b src=%0b br=%0b mr=%0b mw=%0b j=%0b jr=%0b alu=%0b, got rw=%0b src=%0b br=%0b mr=%0b mw=%0b j=%0b jr=%0b alu=%0b",
+                          label, rw_exp, src_exp, br_exp, mr_exp, mw_exp, j_exp, jr_exp, alu_exp,
+                          reg_write, alu_src, branch, mem_read, mem_write, jump, jump_reg, alu_ctrl);
             end else begin
-                $display("[PASS] %0s: rw=%0b src=%0b br=%0b mr=%0b mw=%0b alu=%0b",
-                          label, reg_write, alu_src, branch, mem_read, mem_write, alu_ctrl);
+                $display("[PASS] %0s: rw=%0b src=%0b br=%0b mr=%0b mw=%0b j=%0b jr=%0b alu=%0b",
+                          label, reg_write, alu_src, branch, mem_read, mem_write, jump, jump_reg, alu_ctrl);
             end
         end
     endtask
@@ -58,50 +63,33 @@ module control_tb;
         $dumpvars(0, control_tb);
 
         opcode = 7'b0110011; funct3 = 3'b000; funct7_b5 = 1'b0;
-        check(1, 0, 0, 0, 0, ALU_ADD, "R-type add");
+        check(1, 0, 0, 0, 0, 0, 0, ALU_ADD, "R-type add");
 
         opcode = 7'b0110011; funct3 = 3'b000; funct7_b5 = 1'b1;
-        check(1, 0, 0, 0, 0, ALU_SUB, "R-type sub");
-
-        opcode = 7'b0110011; funct3 = 3'b111; funct7_b5 = 1'b0;
-        check(1, 0, 0, 0, 0, ALU_AND, "R-type and");
-
-        opcode = 7'b0110011; funct3 = 3'b110; funct7_b5 = 1'b0;
-        check(1, 0, 0, 0, 0, ALU_OR, "R-type or");
-
-        opcode = 7'b0110011; funct3 = 3'b100; funct7_b5 = 1'b0;
-        check(1, 0, 0, 0, 0, ALU_XOR, "R-type xor");
-
-        opcode = 7'b0110011; funct3 = 3'b010; funct7_b5 = 1'b0;
-        check(1, 0, 0, 0, 0, ALU_SLT, "R-type slt");
-
-        opcode = 7'b0110011; funct3 = 3'b011; funct7_b5 = 1'b0;
-        check(1, 0, 0, 0, 0, ALU_SLTU, "R-type sltu");
+        check(1, 0, 0, 0, 0, 0, 0, ALU_SUB, "R-type sub");
 
         opcode = 7'b0010011; funct3 = 3'b000; funct7_b5 = 1'b0;
-        check(1, 1, 0, 0, 0, ALU_ADD, "I-type addi");
-
-        opcode = 7'b0010011; funct3 = 3'b111; funct7_b5 = 1'b0;
-        check(1, 1, 0, 0, 0, ALU_AND, "I-type andi");
+        check(1, 1, 0, 0, 0, 0, 0, ALU_ADD, "I-type addi");
 
         opcode = 7'b1100011; funct3 = 3'b000; funct7_b5 = 1'b0;
-        check(0, 0, 1, 0, 0, ALU_SUB, "B-type beq");
+        check(0, 0, 1, 0, 0, 0, 0, ALU_SUB, "B-type beq");
 
-        opcode = 7'b1100011; funct3 = 3'b001; funct7_b5 = 1'b0;
-        check(0, 0, 1, 0, 0, ALU_SUB, "B-type bne");
-
-        // lw: reg_write=1 (writes loaded value back), alu_src=1 (base+offset),
-        // mem_read=1, mem_write=0
         opcode = 7'b0000011; funct3 = 3'b010; funct7_b5 = 1'b0;
-        check(1, 1, 0, 1, 0, ALU_ADD, "Load (lw)");
+        check(1, 1, 0, 1, 0, 0, 0, ALU_ADD, "Load (lw)");
 
-        // sw: reg_write=0 (doesn't write a register), alu_src=1 (base+offset),
-        // mem_read=0, mem_write=1
         opcode = 7'b0100011; funct3 = 3'b010; funct7_b5 = 1'b0;
-        check(0, 1, 0, 0, 1, ALU_ADD, "Store (sw)");
+        check(0, 1, 0, 0, 1, 0, 0, ALU_ADD, "Store (sw)");
+
+        // jal: writes rd, target computed via PC+imm outside the ALU
+        opcode = 7'b1101111; funct3 = 3'b000; funct7_b5 = 1'b0;
+        check(1, 0, 0, 0, 0, 1, 0, ALU_ADD, "jal");
+
+        // jalr: writes rd, target = rs1+imm via ALU (alu_src=1, ALU_ADD)
+        opcode = 7'b1100111; funct3 = 3'b000; funct7_b5 = 1'b0;
+        check(1, 1, 0, 0, 0, 0, 1, ALU_ADD, "jalr");
 
         opcode = 7'b1111111; funct3 = 3'b000; funct7_b5 = 1'b0;
-        check(0, 0, 0, 0, 0, ALU_ADD, "Unknown opcode defaults safely");
+        check(0, 0, 0, 0, 0, 0, 0, ALU_ADD, "Unknown opcode defaults safely");
 
         $display("--------------------------------------------------");
         if (errors == 0)

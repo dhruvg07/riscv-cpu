@@ -39,12 +39,10 @@ module immgen_tb;
         check_imm(32'hFFFF_FFFF, "I-type negative imm (-1)");
 
         // B-type: imm=8, built from real field layout
-        // imm[12]=0 imm[11]=0 imm[10:5]=000000 imm[4:1]=1000 (bit0 implied 0)
         instr = {1'b0, 6'b000000, 5'd0, 5'd0, 3'd0, 4'b0100, 1'b0, 7'b1100011};
         check_imm(32'd8, "B-type positive imm (+8)");
 
         // B-type: imm=-8, tests sign extension on the B-type path specifically
-        // imm[12]=1 imm[11]=1 imm[10:5]=111111 imm[4:1]=1100 (bit0 implied 0)
         instr = {1'b1, 6'b111111, 5'd0, 5'd0, 3'd0, 4'b1100, 1'b1, 7'b1100011};
         check_imm(32'hFFFF_FFF8, "B-type negative imm (-8)");
 
@@ -53,9 +51,20 @@ module immgen_tb;
         check_imm(32'd20, "Load imm (lw)");
 
         // S-type (sw): imm split across instr[31:25] and instr[11:7]
-        // imm=12 (0b000000001100): imm[11:5]=0000000, imm[4:0]=01100
         instr = {7'b0000000, 5'd0, 5'd0, 3'b010, 5'b01100, 7'b0100011};
         check_imm(32'd12, "Store imm (sw)");
+
+        // jalr: reuses I-type immediate layout, opcode 1100111
+        instr = {12'd100, 5'd0, 3'b000, 5'd0, 7'b1100111};
+        check_imm(32'd100, "jalr imm (reuses I-type layout)");
+
+        // J-type (jal): imm=16, scrambled layout
+        instr = {1'b0, 10'b0000001000, 1'b0, 8'b00000000, 5'd0, 7'b1101111};
+        check_imm(32'd16, "J-type positive imm (jal)");
+
+        // J-type: imm=-2, tests sign extension on the J-type path
+        instr = {1'b1, 10'b1111111111, 1'b1, 8'b11111111, 5'd0, 7'b1101111};
+        check_imm(32'hFFFF_FFFE, "J-type negative imm (jal)");
 
         // R-type opcode: immgen should output 0 (unused for this format)
         instr = {25'b0, 7'b0110011};

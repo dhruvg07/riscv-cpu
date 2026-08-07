@@ -7,11 +7,12 @@ A single-cycle RISC-V (RV32I) processor built in Verilog. Each module (PC, regis
 - I-type arithmetic instructions (addi, andi, ori, xori, slti, sltiu, slli, srli, srai)
 - Branch instructions (beq, bne)
 - Loads/stores (lw, sw) with a data memory module
+- Jumps (jal, jalr) -- function call/return patterns work end to end
 - A memory-mapped LED output peripheral (writes to a reserved address drive an 8-bit output)
 
 ## Not yet implemented
-- jal / jalr
 - lui / auipc
+- Byte/halfword loads and stores (lb, lh, sb, sh)
 - FPGA deployment (currently simulation-only)
 - C firmware / toolchain integration
 

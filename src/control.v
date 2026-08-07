@@ -9,6 +9,8 @@ module control (
     output reg        branch,
     output reg        mem_read,
     output reg        mem_write,
+    output reg        jump,        // jal
+    output reg        jump_reg,    // jalr
     output reg [3:0]  alu_ctrl
 );
 
@@ -17,6 +19,8 @@ module control (
     localparam OP_B_TYPE = 7'b1100011;
     localparam OP_LOAD   = 7'b0000011;
     localparam OP_STORE  = 7'b0100011;
+    localparam OP_JAL    = 7'b1101111;
+    localparam OP_JALR   = 7'b1100111;
 
     localparam ALU_ADD  = 4'b0000;
     localparam ALU_SUB  = 4'b0001;
@@ -35,6 +39,8 @@ module control (
         branch    = 1'b0;
         mem_read  = 1'b0;
         mem_write = 1'b0;
+        jump      = 1'b0;
+        jump_reg  = 1'b0;
         alu_ctrl  = ALU_ADD;
 
         case (opcode)
@@ -89,6 +95,18 @@ module control (
                 alu_src   = 1'b1;
                 mem_write = 1'b1;
                 alu_ctrl  = ALU_ADD; // rs1 + offset
+            end
+
+            OP_JAL: begin
+                reg_write = 1'b1;
+                jump      = 1'b1; // target = PC + imm, rd = PC + 4
+            end
+
+            OP_JALR: begin
+                reg_write = 1'b1;
+                alu_src   = 1'b1;
+                jump_reg  = 1'b1; // target = rs1 + imm (via ALU), rd = PC + 4
+                alu_ctrl  = ALU_ADD;
             end
 
             default: begin
