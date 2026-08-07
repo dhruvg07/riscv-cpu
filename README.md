@@ -6,9 +6,10 @@ A single-cycle RISC-V (RV32I) processor built in Verilog. Each module (PC, regis
 - R-type instructions (add, sub, and, or, xor, slt, sltu, sll, srl, sra)
 - I-type arithmetic instructions (addi, andi, ori, xori, slti, sltiu, slli, srli, srai)
 - Branch instructions (beq, bne)
+- Loads/stores (lw, sw) with a data memory module
+- A memory-mapped LED output peripheral (writes to a reserved address drive an 8-bit output)
 
 ## Not yet implemented
-- Loads/stores and data memory
 - jal / jalr
 - lui / auipc
 - FPGA deployment (currently simulation-only)
@@ -28,6 +29,6 @@ verilator --binary -j 0 --trace rtl/regfile.v tb/regfile_tb.v --top-module regfi
 
 Full CPU test:
 ```bash
-verilator --binary -j 0 --trace rtl/pc.v rtl/imem.v rtl/regfile.v rtl/immgen.v rtl/control.v rtl/alu.v rtl/top.v tb/top_tb.v --top-module top_tb
+verilator --binary -j 0 --trace rtl/pc.v rtl/imem.v rtl/regfile.v rtl/immgen.v rtl/control.v rtl/alu.v rtl/dmem.v rtl/led_output.v rtl/top.v tb/top_tb.v --top-module top_tb
 ./obj_dir/Vtop_tb
 ```
