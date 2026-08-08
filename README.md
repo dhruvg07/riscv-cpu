@@ -3,15 +3,16 @@
 A single-cycle RISC-V (RV32I) processor built in Verilog. Each module (PC, register file, instruction memory, ALU, immediate generator, control unit) has its own self-checking Verilator testbench, plus a full-CPU testbench that runs a small hand-written program end to end.
 
 ## Currently supports
+Full base RV32I instruction set:
 - R-type instructions (add, sub, and, or, xor, slt, sltu, sll, srl, sra)
 - I-type arithmetic instructions (addi, andi, ori, xori, slti, sltiu, slli, srli, srai)
 - Branch instructions (beq, bne)
 - Loads/stores (lw, sw) with a data memory module
 - Jumps (jal, jalr) -- function call/return patterns work end to end
-- A memory-mapped LED output peripheral (writes to a reserved address drive an 8-bit output)
+- lui / auipc -- full 32-bit address construction
+- A memory-mapped LED output peripheral (writes to a reserved address drive an 8-bit output), exercised end-to-end by a real program using lui to construct its address
 
 ## Not yet implemented
-- lui / auipc
 - Byte/halfword loads and stores (lb, lh, sb, sh)
 - FPGA deployment (currently simulation-only)
 - C firmware / toolchain integration

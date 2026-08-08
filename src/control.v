@@ -11,6 +11,8 @@ module control (
     output reg        mem_write,
     output reg        jump,        // jal
     output reg        jump_reg,    // jalr
+    output reg        lui,
+    output reg        auipc,
     output reg [3:0]  alu_ctrl
 );
 
@@ -21,6 +23,8 @@ module control (
     localparam OP_STORE  = 7'b0100011;
     localparam OP_JAL    = 7'b1101111;
     localparam OP_JALR   = 7'b1100111;
+    localparam OP_LUI    = 7'b0110111;
+    localparam OP_AUIPC  = 7'b0010111;
 
     localparam ALU_ADD  = 4'b0000;
     localparam ALU_SUB  = 4'b0001;
@@ -41,6 +45,8 @@ module control (
         mem_write = 1'b0;
         jump      = 1'b0;
         jump_reg  = 1'b0;
+        lui       = 1'b0;
+        auipc     = 1'b0;
         alu_ctrl  = ALU_ADD;
 
         case (opcode)
@@ -107,6 +113,16 @@ module control (
                 alu_src   = 1'b1;
                 jump_reg  = 1'b1; // target = rs1 + imm (via ALU), rd = PC + 4
                 alu_ctrl  = ALU_ADD;
+            end
+
+            OP_LUI: begin
+                reg_write = 1'b1;
+                lui       = 1'b1; // rd = imm directly, bypasses ALU
+            end
+
+            OP_AUIPC: begin
+                reg_write = 1'b1;
+                auipc     = 1'b1; // rd = PC + imm, bypasses ALU
             end
 
             default: begin

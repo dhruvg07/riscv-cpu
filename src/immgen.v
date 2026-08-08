@@ -11,6 +11,8 @@ module immgen (
     localparam OP_B_TYPE = 7'b1100011;
     localparam OP_S_TYPE = 7'b0100011;
     localparam OP_JAL    = 7'b1101111;
+    localparam OP_LUI    = 7'b0110111;
+    localparam OP_AUIPC  = 7'b0010111;
 
     always @(*) begin
         case (instr[6:0])
@@ -22,6 +24,8 @@ module immgen (
                 imm = {{19{instr[31]}}, instr[31], instr[7], instr[30:25], instr[11:8], 1'b0};
             OP_JAL:
                 imm = {{11{instr[31]}}, instr[31], instr[19:12], instr[20], instr[30:21], 1'b0};
+            OP_LUI, OP_AUIPC:
+                imm = {instr[31:12], 12'b0};
             default:
                 imm = 32'b0;
         endcase

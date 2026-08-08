@@ -13,7 +13,7 @@ module top (
     wire [31:0] rs1_data, rs2_data, alu_b, alu_result, imm;
     wire [31:0] dmem_read_data, reg_write_data;
     wire        reg_write, alu_src, branch, zero, branch_taken;
-    wire        mem_read, mem_write, jump, jump_reg;
+    wire        mem_read, mem_write, jump, jump_reg, lui, auipc;
     wire [3:0]  alu_ctrl;
 
     wire [6:0] opcode    = instr[6:0];
@@ -23,8 +23,6 @@ module top (
     wire [4:0] rs2_addr  = instr[24:20];
     wire       funct7_b5 = instr[30];
 
-    // Address decode: stores to LED_ADDR go to the LED peripheral instead
-    // of data memory, so only one of these should ever be asserted at once.
     wire is_led_addr  = (alu_result == LED_ADDR);
     wire dmem_write   = mem_write & ~is_led_addr;
     wire led_write    = mem_write & is_led_addr;
@@ -69,6 +67,8 @@ module top (
         .mem_write (mem_write),
         .jump      (jump),
         .jump_reg  (jump_reg),
+        .lui       (lui),
+        .auipc     (auipc),
         .alu_ctrl  (alu_ctrl)
     );
 
@@ -99,17 +99,16 @@ module top (
         .led        (led)
     );
 
-    // Write-back mux: loaded value, return address (jal/jalr), or ALU result
     assign reg_write_data = mem_read        ? dmem_read_data :
                              (jump|jump_reg) ? pc_plus_4 :
+                             lui             ? imm :
+                             auipc           ? pc_target :
                                                 alu_result;
 
     assign pc_plus_4    = pc_out + 32'd4;
-    assign pc_target    = pc_out + imm;           // used by taken branches and jal
-    assign branch_taken = branch & (zero ^ funct3[0]); // beq: funct3[0]=0, bne: funct3[0]=1
+    assign pc_target    = pc_out + imm;
+    assign branch_taken = branch & (zero ^ funct3[0]);
 
-    // PC mux: jal -> PC+imm, jalr -> rs1+imm (already in alu_result),
-    // taken branch -> PC+imm, otherwise -> PC+4
     assign pc_next = jump             ? pc_target :
                       jump_reg        ? alu_result :
                       branch_taken    ? pc_target :
